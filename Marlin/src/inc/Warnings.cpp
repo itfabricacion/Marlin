@@ -191,7 +191,6 @@
       #warning "Note: Auto-assigned Y2_DIAG_PIN to E7_DIAG_PIN. (Define NO_AUTO_ASSIGN_WARNING to suppress this warning.)"
     #endif
   #endif
-  #define NO_AUTO_ASSIGN_WARNING
   #if AUTO_ASSIGNED_Z2_STEPPER
     #warning "Note: Auto-assigned Z2 STEP/DIR/ENABLE_PINs to unused En_STEP/DIR/ENABLE_PINs. (Define NO_AUTO_ASSIGN_WARNING to suppress this warning.)"
   #endif
