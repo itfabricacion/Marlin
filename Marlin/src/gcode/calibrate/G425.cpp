@@ -73,16 +73,16 @@
 #if BOTH(CALIBRATION_MEASURE_LEFT, CALIBRATION_MEASURE_RIGHT)
   #define HAS_X_CENTER 1
 #endif
-#if ALL(HAS_Y_AXIS, CALIBRATION_MEASURE_FRONT, CALIBRATION_MEASURE_BACK)
+#if HAS_Y_AXIS && BOTH(CALIBRATION_MEASURE_FRONT, CALIBRATION_MEASURE_BACK)
   #define HAS_Y_CENTER 1
 #endif
-#if ALL(HAS_I_AXIS, CALIBRATION_MEASURE_IMIN, CALIBRATION_MEASURE_IMAX)
+#if LINEAR_AXES >= 4 && BOTH(CALIBRATION_MEASURE_IMIN, CALIBRATION_MEASURE_IMAX)
   #define HAS_I_CENTER 1
 #endif
-#if ALL(HAS_J_AXIS, CALIBRATION_MEASURE_JMIN, CALIBRATION_MEASURE_JMAX)
+#if LINEAR_AXES >= 5 && BOTH(CALIBRATION_MEASURE_JMIN, CALIBRATION_MEASURE_JMAX)
   #define HAS_J_CENTER 1
 #endif
-#if ALL(HAS_K_AXIS, CALIBRATION_MEASURE_KMIN, CALIBRATION_MEASURE_KMAX)
+#if LINEAR_AXES >= 6 && BOTH(CALIBRATION_MEASURE_KMIN, CALIBRATION_MEASURE_KMAX)
   #define HAS_K_CENTER 1
 #endif
 
@@ -105,27 +105,13 @@ struct measurements_t {
 };
 
 #if ENABLED(BACKLASH_GCODE)
-  class restorer_correction {
-    const uint8_t val_;
-  public:
-    restorer_correction(const uint8_t temp_val) : val_(backlash.get_correction_uint8()) { backlash.set_correction_uint8(temp_val); }
-    ~restorer_correction() { backlash.set_correction_uint8(val_); }
-  };
-
-  #define TEMPORARY_BACKLASH_CORRECTION(value) restorer_correction restorer_tbst(value)
+  #define TEMPORARY_BACKLASH_CORRECTION(value) REMEMBER(tbst, backlash.correction, value)
 #else
   #define TEMPORARY_BACKLASH_CORRECTION(value)
 #endif
 
 #if ENABLED(BACKLASH_GCODE) && defined(BACKLASH_SMOOTHING_MM)
-  class restorer_smoothing {
-    const float val_;
-  public:
-    restorer_smoothing(const float temp_val) : val_(backlash.get_smoothing_mm()) { backlash.set_smoothing_mm(temp_val); }
-    ~restorer_smoothing() { backlash.set_smoothing_mm(val_); }
-  };
-
-  #define TEMPORARY_BACKLASH_SMOOTHING(value) restorer_smoothing restorer_tbsm(value)
+  #define TEMPORARY_BACKLASH_SMOOTHING(value) REMEMBER(tbsm, backlash.smoothing_mm, value)
 #else
   #define TEMPORARY_BACKLASH_SMOOTHING(value)
 #endif
@@ -255,15 +241,14 @@ inline void probe_side(measurements_t &m, const float uncertainty, const side_t 
 
   park_above_object(m, uncertainty);
 
-  #define _ACASE(N,A,B) case A: dir = -1; case B: axis = N##_AXIS; break
-  #define _PCASE(N) _ACASE(N, N##MINIMUM, N##MAXIMUM)
-
   switch (side) {
     #if AXIS_CAN_CALIBRATE(X)
-      _ACASE(X, RIGHT, LEFT);
+      case RIGHT: dir = -1;
+      case LEFT:  axis = X_AXIS; break;
     #endif
-    #if HAS_Y_AXIS && AXIS_CAN_CALIBRATE(Y)
-      _ACASE(Y, BACK, FRONT);
+    #if LINEAR_AXES >= 2 && AXIS_CAN_CALIBRATE(Y)
+      case BACK:  dir = -1;
+      case FRONT: axis = Y_AXIS; break;
     #endif
     #if HAS_Z_AXIS && AXIS_CAN_CALIBRATE(Z)
       case TOP: {
@@ -273,14 +258,17 @@ inline void probe_side(measurements_t &m, const float uncertainty, const side_t 
         return;
       }
     #endif
-    #if HAS_I_AXIS && AXIS_CAN_CALIBRATE(I)
-      _PCASE(I);
+    #if LINEAR_AXES >= 4 && AXIS_CAN_CALIBRATE(I)
+      case IMINIMUM: dir = -1;
+      case IMAXIMUM: axis = I_AXIS; break;
     #endif
-    #if HAS_J_AXIS && AXIS_CAN_CALIBRATE(J)
-      _PCASE(J);
+    #if LINEAR_AXES >= 5 && AXIS_CAN_CALIBRATE(J)
+      case JMINIMUM: dir = -1;
+      case JMAXIMUM: axis = J_AXIS; break;
     #endif
-    #if HAS_K_AXIS && AXIS_CAN_CALIBRATE(K)
-      _PCASE(K);
+    #if LINEAR_AXES >= 6 && AXIS_CAN_CALIBRATE(K)
+      case KMINIMUM: dir = -1;
+      case KMAXIMUM: axis = K_AXIS; break;
     #endif
     default: return;
   }
@@ -382,7 +370,7 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
         SERIAL_ECHOLNPGM("  Back: ", m.obj_side[BACK]);
       #endif
     #endif
-    #if HAS_I_AXIS
+    #if LINEAR_AXES >= 4
       #if ENABLED(CALIBRATION_MEASURE_IMIN)
         SERIAL_ECHOLNPGM("  " STR_I_MIN ": ", m.obj_side[IMINIMUM]);
       #endif
@@ -390,7 +378,7 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
         SERIAL_ECHOLNPGM("  " STR_I_MAX ": ", m.obj_side[IMAXIMUM]);
       #endif
     #endif
-    #if HAS_J_AXIS
+    #if LINEAR_AXES >= 5
       #if ENABLED(CALIBRATION_MEASURE_JMIN)
         SERIAL_ECHOLNPGM("  " STR_J_MIN ": ", m.obj_side[JMINIMUM]);
       #endif
@@ -398,7 +386,7 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
         SERIAL_ECHOLNPGM("  " STR_J_MAX ": ", m.obj_side[JMAXIMUM]);
       #endif
     #endif
-    #if HAS_K_AXIS
+    #if LINEAR_AXES >= 6
       #if ENABLED(CALIBRATION_MEASURE_KMIN)
         SERIAL_ECHOLNPGM("  " STR_K_MIN ": ", m.obj_side[KMINIMUM]);
       #endif
@@ -451,7 +439,7 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
     #if HAS_Z_AXIS && AXIS_CAN_CALIBRATE(Z)
       SERIAL_ECHOLNPGM("  Top: ", m.backlash[TOP]);
     #endif
-    #if HAS_I_AXIS && AXIS_CAN_CALIBRATE(I)
+    #if LINEAR_AXES >= 4 && AXIS_CAN_CALIBRATE(I)
       #if ENABLED(CALIBRATION_MEASURE_IMIN)
         SERIAL_ECHOLNPGM("  " STR_I_MIN ": ", m.backlash[IMINIMUM]);
       #endif
@@ -459,7 +447,7 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
         SERIAL_ECHOLNPGM("  " STR_I_MAX ": ", m.backlash[IMAXIMUM]);
       #endif
     #endif
-    #if HAS_J_AXIS && AXIS_CAN_CALIBRATE(J)
+    #if LINEAR_AXES >= 5 && AXIS_CAN_CALIBRATE(J)
       #if ENABLED(CALIBRATION_MEASURE_JMIN)
         SERIAL_ECHOLNPGM("  " STR_J_MIN ": ", m.backlash[JMINIMUM]);
       #endif
@@ -467,7 +455,7 @@ inline void probe_sides(measurements_t &m, const float uncertainty) {
         SERIAL_ECHOLNPGM("  " STR_J_MAX ": ", m.backlash[JMAXIMUM]);
       #endif
     #endif
-    #if HAS_K_AXIS && AXIS_CAN_CALIBRATE(K)
+    #if LINEAR_AXES >= 6 && AXIS_CAN_CALIBRATE(K)
       #if ENABLED(CALIBRATION_MEASURE_KMIN)
         SERIAL_ECHOLNPGM("  " STR_K_MIN ": ", m.backlash[KMINIMUM]);
       #endif
@@ -538,7 +526,7 @@ inline void calibrate_backlash(measurements_t &m, const float uncertainty) {
 
   {
     // New scope for TEMPORARY_BACKLASH_CORRECTION
-    TEMPORARY_BACKLASH_CORRECTION(backlash.all_off);
+    TEMPORARY_BACKLASH_CORRECTION(all_off);
     TEMPORARY_BACKLASH_SMOOTHING(0.0f);
 
     probe_sides(m, uncertainty);
@@ -546,45 +534,45 @@ inline void calibrate_backlash(measurements_t &m, const float uncertainty) {
     #if ENABLED(BACKLASH_GCODE)
 
       #if HAS_X_CENTER
-        backlash.set_distance_mm(X_AXIS, (m.backlash[LEFT] + m.backlash[RIGHT]) / 2);
+        backlash.distance_mm.x = (m.backlash[LEFT] + m.backlash[RIGHT]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_LEFT)
-        backlash.set_distance_mm(X_AXIS, m.backlash[LEFT]);
+        backlash.distance_mm.x = m.backlash[LEFT];
       #elif ENABLED(CALIBRATION_MEASURE_RIGHT)
-        backlash.set_distance_mm(X_AXIS, m.backlash[RIGHT]);
+        backlash.distance_mm.x = m.backlash[RIGHT];
       #endif
 
       #if HAS_Y_CENTER
-        backlash.set_distance_mm(Y_AXIS, (m.backlash[FRONT] + m.backlash[BACK]) / 2);
+        backlash.distance_mm.y = (m.backlash[FRONT] + m.backlash[BACK]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_FRONT)
-        backlash.set_distance_mm(Y_AXIS, m.backlash[FRONT]);
+        backlash.distance_mm.y = m.backlash[FRONT];
       #elif ENABLED(CALIBRATION_MEASURE_BACK)
-        backlash.set_distance_mm(Y_AXIS, m.backlash[BACK]);
+        backlash.distance_mm.y = m.backlash[BACK];
       #endif
 
-      TERN_(HAS_Z_AXIS, if (AXIS_CAN_CALIBRATE(Z)) backlash.set_distance_mm(Z_AXIS, m.backlash[TOP]));
+      TERN_(HAS_Z_AXIS, if (AXIS_CAN_CALIBRATE(Z)) backlash.distance_mm.z = m.backlash[TOP]);
 
       #if HAS_I_CENTER
-        backlash.set_distance_mm(I_AXIS, (m.backlash[IMINIMUM] + m.backlash[IMAXIMUM]) / 2);
+        backlash.distance_mm.i = (m.backlash[IMINIMUM] + m.backlash[IMAXIMUM]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_IMIN)
-        backlash.set_distance_mm(I_AXIS, m.backlash[IMINIMUM]);
+        backlash.distance_mm.i = m.backlash[IMINIMUM];
       #elif ENABLED(CALIBRATION_MEASURE_IMAX)
-        backlash.set_distance_mm(I_AXIS, m.backlash[IMAXIMUM]);
+        backlash.distance_mm.i = m.backlash[IMAXIMUM];
       #endif
 
       #if HAS_J_CENTER
-        backlash.set_distance_mm(J_AXIS, (m.backlash[JMINIMUM] + m.backlash[JMAXIMUM]) / 2);
+        backlash.distance_mm.j = (m.backlash[JMINIMUM] + m.backlash[JMAXIMUM]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_JMIN)
-        backlash.set_distance_mm(J_AXIS, m.backlash[JMINIMUM]);
+        backlash.distance_mm.j = m.backlash[JMINIMUM];
       #elif ENABLED(CALIBRATION_MEASURE_JMAX)
-        backlash.set_distance_mm(J_AXIS, m.backlash[JMAXIMUM]);
+        backlash.distance_mm.j = m.backlash[JMAXIMUM];
       #endif
 
       #if HAS_K_CENTER
-        backlash.set_distance_mm(K_AXIS, (m.backlash[KMINIMUM] + m.backlash[KMAXIMUM]) / 2);
+        backlash.distance_mm.k = (m.backlash[KMINIMUM] + m.backlash[KMAXIMUM]) / 2;
       #elif ENABLED(CALIBRATION_MEASURE_KMIN)
-        backlash.set_distance_mm(K_AXIS, m.backlash[KMINIMUM]);
+        backlash.distance_mm.k = m.backlash[KMINIMUM];
       #elif ENABLED(CALIBRATION_MEASURE_KMAX)
-        backlash.set_distance_mm(K_AXIS, m.backlash[KMAXIMUM]);
+        backlash.distance_mm.k = m.backlash[KMAXIMUM];
       #endif
 
     #endif // BACKLASH_GCODE
@@ -595,7 +583,7 @@ inline void calibrate_backlash(measurements_t &m, const float uncertainty) {
     // allowed directions to take up any backlash
     {
       // New scope for TEMPORARY_BACKLASH_CORRECTION
-      TEMPORARY_BACKLASH_CORRECTION(backlash.all_on);
+      TEMPORARY_BACKLASH_CORRECTION(all_on);
       TEMPORARY_BACKLASH_SMOOTHING(0.0f);
       const xyz_float_t move = LINEAR_AXIS_ARRAY(
         AXIS_CAN_CALIBRATE(X) * 3, AXIS_CAN_CALIBRATE(Y) * 3, AXIS_CAN_CALIBRATE(Z) * 3,
@@ -625,7 +613,7 @@ inline void update_measurements(measurements_t &m, const AxisEnum axis) {
  *    - Call calibrate_backlash() beforehand for best accuracy
  */
 inline void calibrate_toolhead(measurements_t &m, const float uncertainty, const uint8_t extruder) {
-  TEMPORARY_BACKLASH_CORRECTION(backlash.all_on);
+  TEMPORARY_BACKLASH_CORRECTION(all_on);
   TEMPORARY_BACKLASH_SMOOTHING(0.0f);
 
   TERN(HAS_MULTI_HOTEND, set_nozzle(m, extruder), UNUSED(extruder));
@@ -662,7 +650,7 @@ inline void calibrate_toolhead(measurements_t &m, const float uncertainty, const
  *   uncertainty    in     - How far away from the object to begin probing
  */
 inline void calibrate_all_toolheads(measurements_t &m, const float uncertainty) {
-  TEMPORARY_BACKLASH_CORRECTION(backlash.all_on);
+  TEMPORARY_BACKLASH_CORRECTION(all_on);
   TEMPORARY_BACKLASH_SMOOTHING(0.0f);
 
   HOTEND_LOOP() calibrate_toolhead(m, uncertainty, e);
@@ -678,7 +666,7 @@ inline void calibrate_all_toolheads(measurements_t &m, const float uncertainty) 
  *   1) For each nozzle, touch top and sides of object to determine object position and
  *      nozzle offsets. Do a fast but rough search over a wider area.
  *   2) With the first nozzle, touch top and sides of object to determine backlash values
- *      for all axes (if BACKLASH_GCODE is enabled)
+ *      for all axis (if BACKLASH_GCODE is enabled)
  *   3) For each nozzle, touch top and sides of object slowly to determine precise
  *      position of object. Adjust coordinate system and nozzle offsets so probed object
  *      location corresponds to known object location with a high degree of precision.
@@ -688,7 +676,7 @@ inline void calibrate_all() {
 
   TERN_(HAS_HOTEND_OFFSET, reset_hotend_offsets());
 
-  TEMPORARY_BACKLASH_CORRECTION(backlash.all_on);
+  TEMPORARY_BACKLASH_CORRECTION(all_on);
   TEMPORARY_BACKLASH_SMOOTHING(0.0f);
 
   // Do a fast and rough calibration of the toolheads

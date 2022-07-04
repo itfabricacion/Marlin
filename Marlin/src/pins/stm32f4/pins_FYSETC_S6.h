@@ -50,24 +50,23 @@
   // 128 kB sector allocated for EEPROM emulation.
   #define FLASH_EEPROM_LEVELING
 #elif ENABLED(I2C_EEPROM)
-  #define MARLIN_EEPROM_SIZE              0x1000  // 4K
+  #define MARLIN_EEPROM_SIZE              0x1000  // 4KB
 #endif
 
 //
 // Servos
 //
 #ifndef SERVO0_PIN
-  #define SERVO0_PIN                        PA1//PA3
+  #define SERVO0_PIN                        PA3
 #endif
-
 
 //
 // Limit Switches
 //
 #define X_MIN_PIN                           PB14
 #define X_MAX_PIN                           PA1
-#define Y_MIN_PIN                           PA2//PB13
-#define Y_MAX_PIN                           PB13//PA2
+#define Y_MIN_PIN                           PB13
+#define Y_MAX_PIN                           PA2
 #define Z_MIN_PIN                           PA0
 #define Z_MAX_PIN                           PA3
 
@@ -76,7 +75,7 @@
 // share with X_MAX_PIN
 //
 #ifndef FIL_RUNOUT_PIN
-  #define FIL_RUNOUT_PIN                    PB14//PA1
+  #define FIL_RUNOUT_PIN                    PA1
 #endif
 
 //
@@ -129,7 +128,7 @@
     #define Y_SERIAL_TX_PIN                 PE14
   #endif
   #ifndef Y_SERIAL_RX_PIN
-    #define Y_SERIAL_RX_PIN                 PE13
+    #define Y_SERIAL_RX_PIN                 PC4
   #endif
   #ifndef Z_SERIAL_TX_PIN
     #define Z_SERIAL_TX_PIN                 PD11
@@ -184,7 +183,7 @@
 #endif
 
 #ifndef FAN_PIN
-  #define FAN_PIN                           PA13//PB0
+  #define FAN_PIN                           PB0
 #endif
 #ifndef FAN1_PIN
   #define FAN1_PIN                          PB1
@@ -204,7 +203,7 @@
  *   PC11 | 8  7 | PD2      PC6  | 8  7 | PA4
  *   PC10   6  5 | PC12     PC7    6  5 | PA7
  *   PD0  | 4  3 | PD1      PB10 | 4  3 | RESET
- *    GND | 2  1 | 5V        GND | 2  1 | 5V
+ *   GND  | 2  1 | 5V       GND  | 2  1 | 5V
  *         ------                 ------
  *          EXP1                   EXP2
  */
