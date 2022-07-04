@@ -23,7 +23,6 @@
 #include "../gcode.h"
 #include "../../MarlinCore.h" // for stepper_inactive_time, disable_e_steppers
 #include "../../lcd/marlinui.h"
-#include "../../module/motion.h" // for e_axis_mask
 #include "../../module/stepper.h"
 
 #if ENABLED(AUTO_BED_LEVELING_UBL)
@@ -34,8 +33,8 @@
 #include "../../core/debug_out.h"
 #include "../../libs/hex_print.h"
 
-inline stepper_flags_t selected_axis_bits() {
-  stepper_flags_t selected{0};
+inline axis_flags_t selected_axis_bits() {
+  axis_flags_t selected{0};
   #if HAS_EXTRUDERS
     if (parser.seen('E')) {
       if (E_TERN0(parser.has_value())) {
@@ -44,7 +43,7 @@ inline stepper_flags_t selected_axis_bits() {
           selected.bits = _BV(INDEX_OF_AXIS(E_AXIS, e));
       }
       else
-        selected.bits = e_axis_mask;
+        selected.bits = selected.e_bits();
     }
   #endif
   selected.bits |= LINEAR_AXIS_GANG(
@@ -59,7 +58,7 @@ inline stepper_flags_t selected_axis_bits() {
 }
 
 // Enable specified axes and warn about other affected axes
-void do_enable(const stepper_flags_t to_enable) {
+void do_enable(const axis_flags_t to_enable) {
   const ena_mask_t was_enabled = stepper.axis_enabled.bits,
                   shall_enable = to_enable.bits & ~was_enabled;
 
@@ -78,7 +77,7 @@ void do_enable(const stepper_flags_t to_enable) {
     }
   }
   #if HAS_EXTRUDERS
-    EXTRUDER_LOOP() {
+    LOOP_L_N(e, EXTRUDERS) {
       const uint8_t a = INDEX_OF_AXIS(E_AXIS, e);
       if (TEST(shall_enable, a)) {
         stepper.ENABLE_EXTRUDER(e);
@@ -142,7 +141,7 @@ void GcodeSuite::M17() {
   }
 }
 
-void try_to_disable(const stepper_flags_t to_disable) {
+void try_to_disable(const axis_flags_t to_disable) {
   ena_mask_t still_enabled = to_disable.bits & stepper.axis_enabled.bits;
 
   DEBUG_ECHOLNPGM("Enabled: ", hex_word(stepper.axis_enabled.bits), " To Disable: ", hex_word(to_disable.bits), " | ", hex_word(still_enabled));
@@ -162,7 +161,7 @@ void try_to_disable(const stepper_flags_t to_disable) {
       DEBUG_ECHOLNPGM(" ... still_enabled=", hex_word(still_enabled));
     }
   #if HAS_EXTRUDERS
-    EXTRUDER_LOOP() {
+    LOOP_L_N(e, EXTRUDERS) {
       const uint8_t a = INDEX_OF_AXIS(E_AXIS, e);
       if (TEST(to_disable.bits, a)) {
         DEBUG_ECHOPGM("Try to disable E", AS_DIGIT(e), " (", a, ") with overlap ", hex_word(enable_overlap[a]), " ... ");
@@ -195,7 +194,7 @@ void try_to_disable(const stepper_flags_t to_disable) {
     }
   }
   #if HAS_EXTRUDERS
-    EXTRUDER_LOOP() {
+    LOOP_L_N(e, EXTRUDERS) {
       const uint8_t a = INDEX_OF_AXIS(E_AXIS, e);
       if (TEST(still_enabled, a)) {
         SERIAL_CHAR('E', '0' + e);
@@ -214,16 +213,7 @@ void try_to_disable(const stepper_flags_t to_disable) {
 void GcodeSuite::M18_M84() {
   if (parser.seenval('S')) {
     reset_stepper_timeout();
-    #if HAS_DISABLE_INACTIVE_AXIS
-      const millis_t ms = parser.value_millis_from_seconds();
-      #if LASER_SAFETY_TIMEOUT_MS > 0
-        if (ms && ms <= LASER_SAFETY_TIMEOUT_MS) {
-          SERIAL_ECHO_MSG("M18 timeout must be > ", MS_TO_SEC(LASER_SAFETY_TIMEOUT_MS + 999), " s for laser safety.");
-          return;
-        }
-      #endif
-      stepper_inactive_time = ms;
-    #endif
+    stepper_inactive_time = parser.value_millis_from_seconds();
   }
   else {
     if (parser.seen_axis()) {
@@ -252,6 +242,6 @@ void GcodeSuite::M18_M84() {
     else
       planner.finish_and_disable();
 
-    TERN_(AUTO_BED_LEVELING_UBL, bedlevel.steppers_were_disabled());
+    TERN_(AUTO_BED_LEVELING_UBL, ubl.steppers_were_disabled());
   }
 }

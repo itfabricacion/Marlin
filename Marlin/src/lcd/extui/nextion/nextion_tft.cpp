@@ -430,24 +430,25 @@ void NextionTFT::PanelInfo(uint8_t req) {
     break;
 
   case 36: // Endstop Info
-    #if X_HOME_TO_MIN
+    #if HAS_X_MIN
       SEND_VALasTXT("x1", READ(X_MIN_PIN) != X_MIN_ENDSTOP_INVERTING ? "triggered" : "open");
-    #elif X_HOME_TO_MAX
+    #endif
+    #if HAS_X_MAX
       SEND_VALasTXT("x2", READ(X_MAX_PIN) != X_MAX_ENDSTOP_INVERTING ? "triggered" : "open");
     #endif
-    #if Y_HOME_TO_MIN
+    #if HAS_Y_MIN
       SEND_VALasTXT("y1", READ(Y_MIN_PIN) != Y_MIN_ENDSTOP_INVERTING ? "triggered" : "open");
-    #elif Y_HOME_TO_MAX
-      SEND_VALasTXT("y2", READ(X_MAX_PIN) != Y_MAX_ENDSTOP_INVERTING ? "triggered" : "open");
     #endif
-    #if Z_HOME_TO_MIN
+    #if HAS_Z_MIN
       SEND_VALasTXT("z1", READ(Z_MIN_PIN) != Z_MIN_ENDSTOP_INVERTING ? "triggered" : "open");
-    #elif Z_HOME_TO_MAX
+    #endif
+    #if HAS_Z_MAX
       SEND_VALasTXT("z2", READ(Z_MAX_PIN) != Z_MAX_ENDSTOP_INVERTING ? "triggered" : "open");
     #endif
     #if HAS_Z2_MIN
       SEND_VALasTXT("z2", READ(Z2_MIN_PIN) != Z2_MIN_ENDSTOP_INVERTING ? "triggered" : "open");
-    #elif HAS_Z2_MAX
+    #endif
+    #if HAS_Z2_MAX
       SEND_VALasTXT("z2", READ(Z2_MAX_PIN) != Z2_MAX_ENDSTOP_INVERTING ? "triggered" : "open");
     #endif
     #if HAS_BED_PROBE

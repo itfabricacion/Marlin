@@ -64,7 +64,7 @@
 #define Y_DIAG_PIN                          PE12  // Y-
 #define Z_DIAG_PIN                          PG8   // Z-
 #define E0_DIAG_PIN                         PE15  // E0
-#define E1_DIAG_PIN                         PE10  // E1
+#define E1_DIAG_PIN                         0//PE10  // E1
 #define E2_DIAG_PIN                         PG5   // E2
 
 //
@@ -136,11 +136,11 @@
   #define X_CS_PIN                          PA15
 #endif
 
-#define Y_STEP_PIN                          PE11
-#define Y_DIR_PIN                           PE8
-#define Y_ENABLE_PIN                        PD7
-#ifndef Y_CS_PIN
-  #define Y_CS_PIN                          PB8
+#define Y_STEP_PIN                          PD13//PE11
+#define Y_DIR_PIN                           PG9//PE8
+#define Y_ENABLE_PIN                        PF0//PD7
+ #ifndef Y_CS_PIN
+  #define Y_CS_PIN                          PG12//PB8
 #endif
 
 #define Z_STEP_PIN                          PE13
@@ -157,18 +157,25 @@
   #define E0_CS_PIN                         PB3
 #endif
 
-#define E1_STEP_PIN                         PD15
-#define E1_DIR_PIN                          PE7
-#define E1_ENABLE_PIN                       PA3
+#define E1_STEP_PIN                         0//PD15
+#define E1_DIR_PIN                          0//PE7
+#define E1_ENABLE_PIN                       0//PA3
 #ifndef E1_CS_PIN
-  #define E1_CS_PIN                         PG15
+  #define E1_CS_PIN                         0//PG15
 #endif
 
-#define E2_STEP_PIN                         PD13
-#define E2_DIR_PIN                          PG9
-#define E2_ENABLE_PIN                       PF0
+#define E2_STEP_PIN                         0//PD13
+#define E2_DIR_PIN                          0//PG9
+#define E2_ENABLE_PIN                       0//PF0
 #ifndef E2_CS_PIN
-  #define E2_CS_PIN                         PG12
+  #define E2_CS_PIN                         0//PG12
+#endif
+
+#define E3_STEP_PIN                         PD15
+#define E3_DIR_PIN                          PE7
+#define E3_ENABLE_PIN                       PA3
+#ifndef E3_CS_PIN
+  #define E3_CS_PIN                         PG15
 #endif
 
 //
@@ -317,7 +324,7 @@
  * (LCD_EN) PD11 | 8  7 | PD10 (LCD_RS)       (BTN_EN1) PG10 | 8  7 | PB12 (SD_SS)
  * (LCD_D4) PG2    6  5 | PG3  (LCD_D5)       (BTN_EN2) PF11   6  5 | PB15 (MOSI)
  * (LCD_D6) PG6  | 4  3 | PG7  (LCD_D7)     (SD_DETECT) PF12 | 4  3 | RESET
- *           GND | 2  1 | 5V                             GND | 2  1 | --
+ *          GND  | 2  1 | 5V                            GND  | 2  1 | NC
  *                ------                                      ------
  *                 EXP1                                        EXP2
  */
@@ -367,8 +374,8 @@
 
 #if ENABLED(BTT_MOTOR_EXPANSION)
   /**       -----                        -----
-   *    -- | . . | GND               -- | . . | GND
-   *    -- | . . | M1EN            M2EN | . . | M3EN
+   *    NC | . . | GND               NC | . . | GND
+   *    NC | . . | M1EN            M2EN | . . | M3EN
    * M1STP | . .   M1DIR           M1RX | . .   M1DIAG
    * M2DIR | . . | M2STP           M2RX | . . | M2DIAG
    * M3DIR | . . | M3STP           M3RX | . . | M3DIAG
@@ -466,13 +473,13 @@
      *
      * The WYH_L12864 connector plug:
      *
-     *                  BEFORE                     AFTER
-     *                  ------                     ------
-     *              -- |10  9 | MOSI           -- |10  9 | MOSI
-     *         BTN_ENC | 8  7 | SCK       BTN_ENC | 8  7 | SCK
-     *         BTN_EN1 | 6  5   SID       BTN_EN1 | 6  5   SID
-     *         BTN_EN2 | 4  3 | CS        BTN_EN2 | 4  3 | CS
-     *              5V | 2  1 | GND           GND | 2  1 | 5V
+     *                  BEFORE                      AFTER
+     *                  ______                     ______
+     *             GND | 1  2 | 5V             5V | 1  2 | GND
+     *              CS | 3  4 | BTN_EN2        CS | 3  4 | BTN_EN2
+     *             SID | 5  6   BTN_EN1       SID | 5  6   BTN_EN1
+     *             SCK | 7  8 | BTN_ENC       SCK | 7  8 | BTN_ENC
+     *            MOSI | 9 10 |              MOSI | 9 10 |
      *                  ------                     ------
      *                   LCD                        LCD
      */
@@ -550,12 +557,12 @@
 //
 
 /**
- *          ------
- *      RX | 8  7 | 3.3V      GPIO0  PF14 ... Leave as unused (ESP3D software configures this with a pullup so OK to leave as floating)
- *   GPIO0 | 6  5 | Reset     GPIO2  PF15 ... must be high (ESP3D software configures this with a pullup so OK to leave as floating)
- *   GPIO2 | 4  3 | Enable    Reset  PG0  ... active low, probably OK to leave floating
- *     GND | 2  1 | TX        Enable PG1  ... Must be high for module to run
- *          ------
+ *          -----
+ *      TX | 1 2 | GND      Enable PG1   // Must be high for module to run
+ *  Enable | 3 4 | GPIO2    Reset  PG0   // active low, probably OK to leave floating
+ *   Reset | 5 6 | GPIO0    GPIO2  PF15  // must be high (ESP3D software configures this with a pullup so OK to leave as floating)
+ *    3.3V | 7 8 | RX       GPIO0  PF14  // Leave as unused (ESP3D software configures this with a pullup so OK to leave as floating)
+ *          -----
  *            W1
  */
 #define ESP_WIFI_MODULE_COM                    6  // Must also set either SERIAL_PORT or SERIAL_PORT_2 to this

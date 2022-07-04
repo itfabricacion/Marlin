@@ -94,10 +94,6 @@
   #include "../../feature/caselight.h"
 #endif
 
-#if ENABLED(POWER_LOSS_RECOVERY)
-  #include "../../feature/powerloss.h"
-#endif
-
 #if ENABLED(BABYSTEPPING)
   #include "../../feature/babystep.h"
 #endif
@@ -389,10 +385,8 @@ namespace ExtUI {
     return !thermalManager.tooColdToExtrude(extruder - E0);
   }
 
-  #if ENABLED(HOST_KEEPALIVE_FEATURE)
-    GcodeSuite::MarlinBusyState getHostKeepaliveState() { return gcode.busy_state; }
-    bool getHostKeepaliveIsPaused() { return gcode.host_keepalive_is_paused(); }
-  #endif
+  GcodeSuite::MarlinBusyState getHostKeepaliveState() { return TERN0(HOST_KEEPALIVE_FEATURE, gcode.busy_state); }
+  bool getHostKeepaliveIsPaused() { return TERN0(HOST_KEEPALIVE_FEATURE, gcode.host_keepalive_is_paused()); }
 
   #if HAS_SOFTWARE_ENDSTOPS
     bool getSoftEndstopState() { return soft_endstop._enabled; }
@@ -626,7 +620,7 @@ namespace ExtUI {
   }
 
   void setAxisMaxFeedrate_mm_s(const feedRate_t value, const axis_t axis) {
-    planner.set_max_feedrate((AxisEnum)axis, value);
+    planner.set_max_feedrate(axis, value);
   }
 
   void setAxisMaxFeedrate_mm_s(const feedRate_t value, const extruder_t extruder) {
@@ -644,7 +638,7 @@ namespace ExtUI {
   }
 
   void setAxisMaxAcceleration_mm_s2(const_float_t value, const axis_t axis) {
-    planner.set_max_acceleration((AxisEnum)axis, value);
+    planner.set_max_acceleration(axis, value);
   }
 
   void setAxisMaxAcceleration_mm_s2(const_float_t value, const extruder_t extruder) {
@@ -678,11 +672,6 @@ namespace ExtUI {
          caselight.update_brightness();
       }
     #endif
-  #endif
-
-  #if ENABLED(POWER_LOSS_RECOVERY)
-    bool getPowerLossRecoveryEnabled()                 { return recovery.enabled; }
-    void setPowerLossRecoveryEnabled(const bool value) {  recovery.enable(value); }
   #endif
 
   #if ENABLED(LIN_ADVANCE)
@@ -863,16 +852,16 @@ namespace ExtUI {
   #endif
 
   #if ENABLED(BACKLASH_GCODE)
-    float getAxisBacklash_mm(const axis_t axis)       { return backlash.get_distance_mm((AxisEnum)axis); }
+    float getAxisBacklash_mm(const axis_t axis)       { return backlash.distance_mm[axis]; }
     void setAxisBacklash_mm(const_float_t value, const axis_t axis)
-                                                      { backlash.set_distance_mm((AxisEnum)axis, constrain(value,0,5)); }
+                                                      { backlash.distance_mm[axis] = constrain(value,0,5); }
 
-    float getBacklashCorrection_percent()             { return backlash.get_correction() * 100.0f; }
-    void setBacklashCorrection_percent(const_float_t value) { backlash.set_correction(constrain(value, 0, 100) / 100.0f); }
+    float getBacklashCorrection_percent()             { return ui8_to_percent(backlash.correction); }
+    void setBacklashCorrection_percent(const_float_t value) { backlash.correction = map(constrain(value, 0, 100), 0, 100, 0, 255); }
 
     #ifdef BACKLASH_SMOOTHING_MM
-      float getBacklashSmoothing_mm()                 { return backlash.get_smoothing_mm(); }
-      void setBacklashSmoothing_mm(const_float_t value) { backlash.set_smoothing_mm(constrain(value, 0, 999)); }
+      float getBacklashSmoothing_mm()                 { return backlash.smoothing_mm; }
+      void setBacklashSmoothing_mm(const_float_t value) { backlash.smoothing_mm = constrain(value, 0, 999); }
     #endif
   #endif
 
@@ -889,11 +878,11 @@ namespace ExtUI {
 
     #if HAS_MESH
 
-      bed_mesh_t& getMeshArray() { return bedlevel.z_values; }
-      float getMeshPoint(const xy_uint8_t &pos) { return bedlevel.z_values[pos.x][pos.y]; }
+      bed_mesh_t& getMeshArray() { return Z_VALUES_ARR; }
+      float getMeshPoint(const xy_uint8_t &pos) { return Z_VALUES(pos.x, pos.y); }
       void setMeshPoint(const xy_uint8_t &pos, const_float_t zoff) {
         if (WITHIN(pos.x, 0, (GRID_MAX_POINTS_X) - 1) && WITHIN(pos.y, 0, (GRID_MAX_POINTS_Y) - 1)) {
-          bedlevel.z_values[pos.x][pos.y] = zoff;
+          Z_VALUES(pos.x, pos.y) = zoff;
           TERN_(ABL_BILINEAR_SUBDIVISION, bed_level_virt_interpolate());
         }
       }
@@ -906,10 +895,12 @@ namespace ExtUI {
           if (x_target != current_position.x || y_target != current_position.y) {
             // If moving across bed, raise nozzle to safe height over bed
             feedrate_mm_s = Z_PROBE_FEEDRATE_FAST;
-            destination.set(current_position.x, current_position.y, Z_CLEARANCE_BETWEEN_PROBES);
+            destination = current_position;
+            destination.z = Z_CLEARANCE_BETWEEN_PROBES;
             prepare_line_to_destination();
             feedrate_mm_s = XY_PROBE_FEEDRATE;
-            destination.set(x_target, y_target);
+            destination.x = x_target;
+            destination.y = y_target;
             prepare_line_to_destination();
           }
           feedrate_mm_s = Z_PROBE_FEEDRATE_FAST;
@@ -1082,23 +1073,15 @@ namespace ExtUI {
 
   // Simplest approach is to make an SRAM copy
   void onUserConfirmRequired(FSTR_P const fstr) {
-    #ifdef __AVR__
-      char msg[strlen_P(FTOP(fstr)) + 1];
-      strcpy_P(msg, FTOP(fstr));
-      onUserConfirmRequired(msg);
-    #else
-      onUserConfirmRequired(FTOP(fstr));
-    #endif
+    char msg[strlen_P(FTOP(fstr)) + 1];
+    strcpy_P(msg, FTOP(fstr));
+    onUserConfirmRequired(msg);
   }
 
   void onStatusChanged(FSTR_P const fstr) {
-    #ifdef __AVR__
-      char msg[strlen_P(FTOP(fstr)) + 1];
-      strcpy_P(msg, FTOP(fstr));
-      onStatusChanged(msg);
-    #else
-      onStatusChanged(FTOP(fstr));
-    #endif
+    char msg[strlen_P(FTOP(fstr)) + 1];
+    strcpy_P(msg, FTOP(fstr));
+    onStatusChanged(msg);
   }
 
   FileList::FileList() { refresh(); }
@@ -1161,7 +1144,7 @@ namespace ExtUI {
 
 // At the moment we hook into MarlinUI methods, but this could be cleaned up in the future
 
-void MarlinUI::init_lcd() { ExtUI::onStartup(); }
+void MarlinUI::init() { ExtUI::onStartup(); }
 
 void MarlinUI::update() { ExtUI::onIdle(); }
 

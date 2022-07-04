@@ -93,12 +93,12 @@
     }
     #else
       SERIAL_ECHOLNPGM("  M200 S", parser.volumetric_enabled);
-      EXTRUDER_LOOP() {
+      LOOP_L_N(i, EXTRUDERS) {
         report_echo_start(forReplay);
         SERIAL_ECHOLNPGM(
-          "  M200 T", e, " D", LINEAR_UNIT(planner.filament_size[e])
+          "  M200 T", i, " D", LINEAR_UNIT(planner.filament_size[i])
           #if ENABLED(VOLUMETRIC_EXTRUDER_LIMIT)
-            , " L", LINEAR_UNIT(planner.volumetric_extruder_limit[e])
+            , " L", LINEAR_UNIT(planner.volumetric_extruder_limit[i])
           #endif
         );
       }
@@ -108,21 +108,12 @@
 #endif // !NO_VOLUMETRICS
 
 /**
- * M201: Set max acceleration in units/s^2 for print moves.
+ * M201: Set max acceleration in units/s^2 for print moves (M201 X1000 Y1000)
  *
- *  X<accel> : Max Acceleration for X
- *  Y<accel> : Max Acceleration for Y
- *  Z<accel> : Max Acceleration for Z
- *       ... : etc
- *  E<accel> : Max Acceleration for Extruder
- *  T<index> : Extruder index to set
- *
- * With XY_FREQUENCY_LIMIT:
- *  F<Hz>      : Frequency limit for XY...IJKUVW
- *  S<percent> : Speed factor percentage.
+ *       With multiple extruders use T to specify which one.
  */
 void GcodeSuite::M201() {
-  if (!parser.seen("T" LOGICAL_AXES_STRING TERN_(XY_FREQUENCY_LIMIT, "FS")))
+  if (!parser.seen("T" LOGICAL_AXES_STRING))
     return M201_report();
 
   const int8_t target_extruder = get_target_extruder_from_command();
@@ -130,13 +121,13 @@ void GcodeSuite::M201() {
 
   #ifdef XY_FREQUENCY_LIMIT
     if (parser.seenval('F')) planner.set_frequency_limit(parser.value_byte());
-    if (parser.seenval('S')) planner.xy_freq_min_speed_factor = constrain(parser.value_float(), 1, 100) / 100;
+    if (parser.seenval('G')) planner.xy_freq_min_speed_factor = constrain(parser.value_float(), 1, 100) / 100;
   #endif
 
   LOOP_LOGICAL_AXES(i) {
-    if (parser.seenval(AXIS_CHAR(i))) {
-      const AxisEnum a = TERN(HAS_EXTRUDERS, (i == E_AXIS ? E_AXIS_N(target_extruder) : (AxisEnum)i), (AxisEnum)i);
-      planner.set_max_acceleration(a, parser.value_axis_units(a));
+    if (parser.seenval(axis_codes[i])) {
+      const uint8_t a = TERN(HAS_EXTRUDERS, (i == E_AXIS ? uint8_t(E_AXIS_N(target_extruder)) : i), i);
+      planner.set_max_acceleration(a, parser.value_axis_units((AxisEnum)a));
     }
   }
 }
@@ -180,9 +171,9 @@ void GcodeSuite::M203() {
   if (target_extruder < 0) return;
 
   LOOP_LOGICAL_AXES(i)
-    if (parser.seenval(AXIS_CHAR(i))) {
-      const AxisEnum a = TERN(HAS_EXTRUDERS, (i == E_AXIS ? E_AXIS_N(target_extruder) : (AxisEnum)i), (AxisEnum)i);
-      planner.set_max_feedrate(a, parser.value_axis_units(a));
+    if (parser.seenval(axis_codes[i])) {
+      const uint8_t a = TERN(HAS_EXTRUDERS, (i == E_AXIS ? uint8_t(E_AXIS_N(target_extruder)) : i), i);
+      planner.set_max_feedrate(a, parser.value_axis_units((AxisEnum)a));
     }
 }
 
@@ -203,7 +194,7 @@ void GcodeSuite::M203_report(const bool forReplay/*=true*/) {
   );
   #if ENABLED(DISTINCT_E_FACTORS)
     LOOP_L_N(i, E_STEPPERS) {
-      if (!forReplay) SERIAL_ECHO_START();
+      SERIAL_ECHO_START();
       SERIAL_ECHOLNPGM_P(
           PSTR("  M203 T"), i
         , SP_E_STR, VOLUMETRIC_UNIT(planner.settings.max_feedrate_mm_s[E_AXIS_N(i)])
@@ -262,7 +253,7 @@ void GcodeSuite::M205() {
   if (parser.seenval('S')) planner.settings.min_feedrate_mm_s = parser.value_linear_units();
   if (parser.seenval('T')) planner.settings.min_travel_feedrate_mm_s = parser.value_linear_units();
   #if HAS_JUNCTION_DEVIATION
-    #if HAS_CLASSIC_JERK && AXIS_COLLISION('J')
+    #if HAS_CLASSIC_JERK && (AXIS4_NAME == 'J' || AXIS5_NAME == 'J' || AXIS6_NAME == 'J')
       #error "Can't set_max_jerk for 'J' axis because 'J' is used for Junction Deviation."
     #endif
     if (parser.seenval('J')) {
@@ -297,13 +288,8 @@ void GcodeSuite::M205_report(const bool forReplay/*=true*/) {
   report_heading_etc(forReplay, F(
     "Advanced (B<min_segment_time_us> S<min_feedrate> T<min_travel_feedrate>"
     TERN_(HAS_JUNCTION_DEVIATION, " J<junc_dev>")
-    #if HAS_CLASSIC_JERK
-      LINEAR_AXIS_GANG(
-        " X<max_jerk>", " Y<max_jerk>", " Z<max_jerk>",
-        " " STR_I "<max_jerk>", " " STR_J "<max_jerk>", " " STR_K "<max_jerk>"
-      )
-    #endif
-    TERN_(HAS_CLASSIC_E_JERK, " E<max_jerk>")
+    TERN_(HAS_CLASSIC_JERK, " X<max_x_jerk> Y<max_y_jerk> Z<max_z_jerk>")
+    TERN_(HAS_CLASSIC_E_JERK, " E<max_e_jerk>")
     ")"
   ));
   SERIAL_ECHOLNPGM_P(

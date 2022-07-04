@@ -70,6 +70,9 @@
 
 #if ENABLED(DIRECT_STEPPING)
   #include "../feature/direct_stepping.h"
+  #define IS_PAGE(B) TEST(B->flag, BLOCK_BIT_IS_PAGE)
+#else
+  #define IS_PAGE(B) false
 #endif
 
 #if ENABLED(EXTERNAL_CLOSED_LOOP_CONTROLLER)
@@ -87,6 +90,47 @@
 #if IS_KINEMATIC && HAS_JUNCTION_DEVIATION
   #define HAS_DIST_MM_ARG 1
 #endif
+
+enum BlockFlagBit : char {
+  // Recalculate trapezoids on entry junction. For optimization.
+  BLOCK_BIT_RECALCULATE,
+
+  // Nominal speed always reached.
+  // i.e., The segment is long enough, so the nominal speed is reachable if accelerating
+  // from a safe speed (in consideration of jerking from zero speed).
+  BLOCK_BIT_NOMINAL_LENGTH,
+
+  // The block is segment 2+ of a longer move
+  BLOCK_BIT_CONTINUED,
+
+  // Sync the stepper counts from the block
+  BLOCK_BIT_SYNC_POSITION
+
+  // Direct stepping page
+  #if ENABLED(DIRECT_STEPPING)
+    , BLOCK_BIT_IS_PAGE
+  #endif
+
+  // Sync the fan speeds from the block
+  #if ENABLED(LASER_SYNCHRONOUS_M106_M107)
+    , BLOCK_BIT_SYNC_FANS
+  #endif
+};
+
+enum BlockFlag : char {
+    BLOCK_FLAG_RECALCULATE          = _BV(BLOCK_BIT_RECALCULATE)
+  , BLOCK_FLAG_NOMINAL_LENGTH       = _BV(BLOCK_BIT_NOMINAL_LENGTH)
+  , BLOCK_FLAG_CONTINUED            = _BV(BLOCK_BIT_CONTINUED)
+  , BLOCK_FLAG_SYNC_POSITION        = _BV(BLOCK_BIT_SYNC_POSITION)
+  #if ENABLED(DIRECT_STEPPING)
+    , BLOCK_FLAG_IS_PAGE            = _BV(BLOCK_BIT_IS_PAGE)
+  #endif
+  #if ENABLED(LASER_SYNCHRONOUS_M106_M107)
+    , BLOCK_FLAG_SYNC_FANS          = _BV(BLOCK_BIT_SYNC_FANS)
+  #endif
+};
+
+#define BLOCK_MASK_SYNC ( BLOCK_FLAG_SYNC_POSITION | TERN0(LASER_SYNCHRONOUS_M106_M107, BLOCK_FLAG_SYNC_FANS) )
 
 #if ENABLED(LASER_POWER_INLINE)
 
@@ -113,83 +157,17 @@
 #endif
 
 /**
- * Planner block flags as boolean bit fields
- */
-enum BlockFlagBit {
-  // Recalculate trapezoids on entry junction. For optimization.
-  BLOCK_BIT_RECALCULATE,
-
-  // Nominal speed always reached.
-  // i.e., The segment is long enough, so the nominal speed is reachable if accelerating
-  // from a safe speed (in consideration of jerking from zero speed).
-  BLOCK_BIT_NOMINAL_LENGTH,
-
-  // The block is segment 2+ of a longer move
-  BLOCK_BIT_CONTINUED,
-
-  // Sync the stepper counts from the block
-  BLOCK_BIT_SYNC_POSITION
-
-  // Direct stepping page
-  #if ENABLED(DIRECT_STEPPING)
-    , BLOCK_BIT_PAGE
-  #endif
-
-  // Sync the fan speeds from the block
-  #if ENABLED(LASER_SYNCHRONOUS_M106_M107)
-    , BLOCK_BIT_SYNC_FANS
-  #endif
-};
-
-/**
- * Planner block flags as boolean bit fields
- */
-typedef struct {
-  union {
-    uint8_t bits;
-
-    struct {
-      bool recalculate:1;
-
-      bool nominal_length:1;
-
-      bool continued:1;
-
-      bool sync_position:1;
-
-      #if ENABLED(DIRECT_STEPPING)
-        bool page:1;
-      #endif
-
-      #if ENABLED(LASER_SYNCHRONOUS_M106_M107)
-        bool sync_fans:1;
-      #endif
-    };
-  };
-
-  void clear() volatile { bits = 0; }
-  void apply(const uint8_t f) volatile { bits |= f; }
-  void apply(const BlockFlagBit b) volatile { SBI(bits, b); }
-  void reset(const BlockFlagBit b) volatile { bits = _BV(b); }
-  void set_nominal(const bool n) volatile { recalculate = true; if (n) nominal_length = true; }
-
-} block_flags_t;
-
-/**
- * A single entry in the planner buffer, used to set up and
- * track a coordinated linear motion for one or more axes.
+ * struct block_t
  *
- * The "nominal" values are as-specified by G-code, and
+ * A single entry in the planner buffer.
+ * Tracks linear movement over multiple axes.
+ *
+ * The "nominal" values are as-specified by gcode, and
  * may never actually be reached due to acceleration limits.
  */
 typedef struct block_t {
 
-  volatile block_flags_t flag;              // Block flags
-
-  volatile bool is_fan_sync() { return TERN0(LASER_SYNCHRONOUS_M106_M107, flag.sync_fans); }
-  volatile bool is_sync() { return flag.sync_position || is_fan_sync(); }
-  volatile bool is_page() { return TERN0(DIRECT_STEPPING, flag.page); }
-  volatile bool is_move() { return !(is_sync() || is_page()); }
+  volatile uint8_t flag;                    // Block flags (See BlockFlag enum above) - Modified by ISR and main thread!
 
   // Fields used by the motion planner to manage acceleration
   float nominal_speed_sqr,                  // The nominal speed for this block in (mm/sec)^2
@@ -266,18 +244,15 @@ typedef struct block_t {
 
   #if ENABLED(POWER_LOSS_RECOVERY)
     uint32_t sdpos;
-    xyze_pos_t start_position;
   #endif
 
   #if ENABLED(LASER_POWER_INLINE)
     block_laser_t laser;
   #endif
 
-  void reset() { memset((char*)this, 0, sizeof(*this)); }
-
 } block_t;
 
-#if ANY(LIN_ADVANCE, SCARA_FEEDRATE_SCALING, GRADIENT_MIX, LCD_SHOW_E_TOTAL, POWER_LOSS_RECOVERY)
+#if ANY(LIN_ADVANCE, SCARA_FEEDRATE_SCALING, GRADIENT_MIX, LCD_SHOW_E_TOTAL)
   #define HAS_POSITION_FLOAT 1
 #endif
 
@@ -435,7 +410,7 @@ class Planner {
 
     /**
      * The current position of the tool in absolute steps
-     * Recalculated if any axis_steps_per_mm are changed by G-code
+     * Recalculated if any axis_steps_per_mm are changed by gcode
      */
     static xyze_long_t position;
 
@@ -456,15 +431,15 @@ class Planner {
       static int8_t xy_freq_limit_hz;         // Minimum XY frequency setting
       static float xy_freq_min_speed_factor;  // Minimum speed factor setting
       static int32_t xy_freq_min_interval_us; // Minimum segment time based on xy_freq_limit_hz
-      static void refresh_frequency_limit() {
+      static inline void refresh_frequency_limit() {
         //xy_freq_min_interval_us = xy_freq_limit_hz ?: LROUND(1000000.0f / xy_freq_limit_hz);
         if (xy_freq_limit_hz)
           xy_freq_min_interval_us = LROUND(1000000.0f / xy_freq_limit_hz);
       }
-      static void set_min_speed_factor_u8(const uint8_t v255) {
+      static inline void set_min_speed_factor_u8(const uint8_t v255) {
         xy_freq_min_speed_factor = float(ui8_to_percent(v255)) / 100;
       }
-      static void set_frequency_limit(const uint8_t hz) {
+      static inline void set_frequency_limit(const uint8_t hz) {
         xy_freq_limit_hz = constrain(hz, 0, 100);
         refresh_frequency_limit();
       }
@@ -515,7 +490,7 @@ class Planner {
      */
 
     // Recalculate steps/s^2 accelerations based on mm/s^2 settings
-    static void refresh_acceleration_rates();
+    static void reset_acceleration_rates();
 
     /**
      * Recalculate 'position' and 'mm_per_step'.
@@ -524,16 +499,16 @@ class Planner {
     static void refresh_positioning();
 
     // For an axis set the Maximum Acceleration in mm/s^2
-    static void set_max_acceleration(const AxisEnum axis, float inMaxAccelMMS2);
+    static void set_max_acceleration(const uint8_t axis, float inMaxAccelMMS2);
 
     // For an axis set the Maximum Feedrate in mm/s
-    static void set_max_feedrate(const AxisEnum axis, float inMaxFeedrateMMS);
+    static void set_max_feedrate(const uint8_t axis, float inMaxFeedrateMMS);
 
     // For an axis set the Maximum Jerk (instant change) in mm/s
     #if HAS_CLASSIC_JERK
       static void set_max_jerk(const AxisEnum axis, float inMaxJerkMMS);
     #else
-      static void set_max_jerk(const AxisEnum, const_float_t) {}
+      static inline void set_max_jerk(const AxisEnum, const_float_t) {}
     #endif
 
     #if HAS_EXTRUDERS
@@ -541,7 +516,7 @@ class Planner {
         e_factor[e] = flow_percentage[e] * 0.01f * TERN(NO_VOLUMETRICS, 1.0f, volumetric_multiplier[e]);
       }
 
-      static void set_flow(const uint8_t e, const int16_t flow) {
+      static inline void set_flow(const uint8_t e, const int16_t flow) {
         flow_percentage[e] = flow;
         refresh_e_factor(e);
       }
@@ -564,7 +539,7 @@ class Planner {
     #if ENABLED(FILAMENT_WIDTH_SENSOR)
       void apply_filament_width_sensor(const int8_t encoded_ratio);
 
-      static float volumetric_percent(const bool vol) {
+      static inline float volumetric_percent(const bool vol) {
         return 100.0f * (vol
             ? volumetric_area_nominal / volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM]
             : volumetric_multiplier[FILAMENT_SENSOR_EXTRUDER_NUM]
@@ -613,9 +588,9 @@ class Planner {
        *  Returns 1.0 if planner.z_fade_height is 0.0.
        *  Returns 0.0 if Z is past the specified 'Fade Height'.
        */
-      static float fade_scaling_factor_for_z(const_float_t rz) {
+      static inline float fade_scaling_factor_for_z(const_float_t rz) {
         static float z_fade_factor = 1;
-        if (!z_fade_height || rz <= 0) return 1;
+        if (!z_fade_height) return 1;
         if (rz >= z_fade_height) return 0;
         if (last_fade_z != rz) {
           last_fade_z = rz;
@@ -759,23 +734,18 @@ class Planner {
     );
 
     /**
-     * @brief Populate a block in preparation for insertion
-     * @details Populate the fields of a new linear movement block
-     *          that will be added to the queue and processed soon
-     *          by the Stepper ISR.
+     * Planner::_populate_block
      *
-     * @param block         A block to populate
-     * @param target        Target position in steps units
-     * @param target_float  Target position in native mm
-     * @param cart_dist_mm  The pre-calculated move lengths for all axes, in mm
-     * @param fr_mm_s       (target) speed of the move
-     * @param extruder      target extruder
-     * @param millimeters   A pre-calculated linear distance for the move, in mm,
-     *                      or 0.0 to have the distance calculated here.
+     * Fills a new linear movement in the block (in terms of steps).
      *
-     * @return  true if movement is acceptable, false otherwise
+     *  target      - target position in steps units
+     *  fr_mm_s     - (target) speed of the move
+     *  extruder    - target extruder
+     *  millimeters - the length of the movement, if known
+     *
+     * Returns true is movement is acceptable, false otherwise
      */
-    static bool _populate_block(block_t * const block, const xyze_long_t &target
+    static bool _populate_block(block_t * const block, bool split_move, const xyze_long_t &target
       OPTARG(HAS_POSITION_FLOAT, const xyze_pos_t &target_float)
       OPTARG(HAS_DIST_MM_ARG, const xyze_float_t &cart_dist_mm)
       , feedRate_t fr_mm_s, const uint8_t extruder, const_float_t millimeters=0.0
@@ -787,7 +757,7 @@ class Planner {
      * case of LASER_SYNCHRONOUS_M106_M107 the fan pwm
      */
     static void buffer_sync_block(
-      TERN_(LASER_SYNCHRONOUS_M106_M107, const BlockFlagBit flag=BLOCK_BIT_SYNC_POSITION)
+      TERN_(LASER_SYNCHRONOUS_M106_M107, uint8_t sync_flag=BLOCK_FLAG_SYNC_POSITION)
     );
 
   #if IS_KINEMATIC
@@ -868,7 +838,7 @@ class Planner {
      */
     static float get_axis_position_mm(const AxisEnum axis);
 
-    static abce_pos_t get_axis_positions_mm() {
+    static inline abce_pos_t get_axis_positions_mm() {
       const abce_pos_t out = LOGICAL_AXIS_ARRAY(
         get_axis_position_mm(E_AXIS),
         get_axis_position_mm(A_AXIS), get_axis_position_mm(B_AXIS), get_axis_position_mm(C_AXIS),
@@ -900,7 +870,7 @@ class Planner {
     static float triggered_position_mm(const AxisEnum axis);
 
     // Blocks are queued, or we're running out moves, or the closed loop controller is waiting
-    static bool busy() {
+    static inline bool busy() {
       return (has_blocks_queued() || cleaning_buffer_counter
           || TERN0(EXTERNAL_CLOSED_LOOP_CONTROLLER, CLOSED_LOOP_WAITING())
       );
@@ -957,8 +927,8 @@ class Planner {
     #if HAS_LINEAR_E_JERK
       FORCE_INLINE static void recalculate_max_e_jerk() {
         const float prop = junction_deviation_mm * SQRT(0.5) / (1.0f - SQRT(0.5));
-        EXTRUDER_LOOP()
-          max_e_jerk[E_INDEX_N(e)] = SQRT(prop * settings.max_acceleration_mm_per_s2[E_INDEX_N(e)]);
+        LOOP_L_N(i, EXTRUDERS)
+          max_e_jerk[E_INDEX_N(i)] = SQRT(prop * settings.max_acceleration_mm_per_s2[E_INDEX_N(i)]);
       }
     #endif
 
@@ -968,7 +938,7 @@ class Planner {
       #if ENABLED(AUTOTEMP_PROPORTIONAL)
         static void _autotemp_update_from_hotend();
       #else
-        static void _autotemp_update_from_hotend() {}
+        static inline void _autotemp_update_from_hotend() {}
       #endif
     #endif
 
@@ -1049,7 +1019,7 @@ class Planner {
         return limit_value;
       }
 
-    #endif // HAS_JUNCTION_DEVIATION
+    #endif // !CLASSIC_JERK
 };
 
 #define PLANNER_XY_FEEDRATE() _MIN(planner.settings.max_feedrate_mm_s[X_AXIS], planner.settings.max_feedrate_mm_s[Y_AXIS])
