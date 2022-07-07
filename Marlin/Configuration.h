@@ -96,7 +96,7 @@
 
 // Choose the name from boards.h that matches your setup
 #ifndef MOTHERBOARD
-  #define MOTHERBOARD BOARD_FYSETC_S6_V2_0
+  #define MOTHERBOARD BOARD_BTT_SKR_PRO_V1_2
 #endif
 
 /**
@@ -794,7 +794,7 @@
  * Note: For Bowden Extruders make this large enough to allow load/unload.
  */
 #define PREVENT_LENGTHY_EXTRUDE
-#define EXTRUDE_MAXLENGTH 2000
+#define EXTRUDE_MAXLENGTH 4000
 
 //===========================================================================
 //======================== Thermal Runaway Protection =======================
@@ -1089,7 +1089,7 @@
  *      - normally-closed switches to GND and D32.
  *      - normally-open switches to 5V and D32.
  */
-#define Z_MIN_PROBE_PIN PA2 // Pin 32 is the RAMPS default
+#define Z_MIN_PROBE_PIN PE10 // Pin 32 is the RAMPS default
 
 /**
  * Probe Type
@@ -2960,7 +2960,7 @@
   #define NEOPIXEL_PIXELS              14 // Number of LEDs in the strip. (Longest strip when NEOPIXEL2_SEPARATE is disabled.)
   //#define NEOPIXEL_IS_SEQUENTIAL          // Sequential display for temperature change - LED by LED. Disable to change all LEDs at once.
   #define NEOPIXEL_BRIGHTNESS         127 // Initial brightness (0-255)
-  #define NEOPIXEL_STARTUP_TEST         // Cycle through colors at startup
+  //#define NEOPIXEL_STARTUP_TEST         // Cycle through colors at startup
 
   // Support for second Adafruit NeoPixel LED driver controlled with M150 S1 ...
   //#define NEOPIXEL2_SEPARATE
