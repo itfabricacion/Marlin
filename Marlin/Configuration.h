@@ -1013,7 +1013,7 @@
  * When changing speed and direction, if the difference is less than the
  * value set here, it may happen instantaneously.
  */
-//#define CLASSIC_JERK
+#define CLASSIC_JERK
 #if ENABLED(CLASSIC_JERK)
   #define DEFAULT_XJERK 10.0
   #define DEFAULT_YJERK 10.0
@@ -1428,12 +1428,12 @@
 // @section machine
 
 // The size of the printable area
-#define X_BED_SIZE 407
-#define Y_BED_SIZE 413
+#define X_BED_SIZE 410
+#define Y_BED_SIZE 418
 
 // Travel limits (mm) after homing, corresponding to endstop positions.
-#define X_MIN_POS -5
-#define Y_MIN_POS -18
+#define X_MIN_POS -2
+#define Y_MIN_POS -13
 #define Z_MIN_POS -2
 #define X_MAX_POS X_BED_SIZE
 #define Y_MAX_POS Y_BED_SIZE
