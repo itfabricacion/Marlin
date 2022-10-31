@@ -42,13 +42,13 @@
 // Steppers
 //
 #ifndef E1_STEP_PIN
-  #define E1_STEP_PIN                      P0_01
+  #define E1_STEP_PIN                      PD15
 #endif
 #ifndef E1_DIR_PIN
-  #define E1_DIR_PIN                       P0_00
+  #define E1_DIR_PIN                       PE7
 #endif
 #ifndef E1_ENABLE_PIN
-  #define E1_ENABLE_PIN                    P0_10
+  #define E1_ENABLE_PIN                    PA3
 #endif
 
 //
@@ -56,13 +56,13 @@
 //  3.3V max when defined as an analog input
 //
 #ifndef TEMP_0_PIN
-  #define TEMP_0_PIN                    P0_24_A1  // A1 (T1) - (68) - TEMP_0_PIN
+  #define TEMP_0_PIN                    PF8  // A1 (T1) - (68) - TEMP_0_PIN
 #endif
 #ifndef TEMP_1_PIN
-  #define TEMP_1_PIN                    P0_25_A2  // A2 (T2) - (69) - TEMP_1_PIN
+  #define TEMP_1_PIN                    PF9  // A2 (T2) - (69) - TEMP_1_PIN
 #endif
 #ifndef TEMP_BED_PIN
-  #define TEMP_BED_PIN                  P0_23_A0  // A0 (T0) - (67) - TEMP_BED_PIN
+  #define TEMP_BED_PIN                  PF7  // A0 (T0) - (67) - TEMP_BED_PIN
 #endif
 
 #if HOTENDS == 1 && !REDUNDANT_TEMP_MATCH(SOURCE, E1)
@@ -90,22 +90,22 @@
 // Heaters / Fans
 //
 #ifndef HEATER_0_PIN
-  #define HEATER_0_PIN                     P2_07
+  #define HEATER_0_PIN                     PB1
 #endif
 #if HOTENDS == 1 && DISABLED(HEATERS_PARALLEL)
   #ifndef FAN1_PIN
-    #define FAN1_PIN                       P2_04
+    #define FAN1_PIN                       PE5
   #endif
 #else
   #ifndef HEATER_1_PIN
-    #define HEATER_1_PIN                   P2_04
+    #define HEATER_1_PIN                   PD14
   #endif
 #endif
 #ifndef FAN_PIN
-  #define FAN_PIN                          P2_03
+  #define FAN_PIN                          PC8
 #endif
 #ifndef HEATER_BED_PIN
-  #define HEATER_BED_PIN                   P2_05
+  #define HEATER_BED_PIN                   PD12
 #endif
 
 //
