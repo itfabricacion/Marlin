@@ -96,7 +96,7 @@
 
 // Choose the name from boards.h that matches your setup
 #ifndef MOTHERBOARD
-  #define MOTHERBOARD BOARD_BTT_SKR_PRO_V1_2
+  #define MOTHERBOARD BOARD_FYSETC_S6_V2_0
 #endif
 
 /**
@@ -1017,7 +1017,7 @@
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K...]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 80, 400, 418.77 }
+#define DEFAULT_AXIS_STEPS_PER_UNIT   { 80, 80, 400, 407.09 }
 
 /**
  * Default Max Feed Rate (linear=mm/s, rotational=°/s)
@@ -1453,7 +1453,7 @@
 // @section extruder
 
 // For direct drive extruder v9 set to true, for geared extruder set to false.
-#define INVERT_E0_DIR false
+#define INVERT_E0_DIR true
 #define INVERT_E1_DIR false
 #define INVERT_E2_DIR false
 #define INVERT_E3_DIR false

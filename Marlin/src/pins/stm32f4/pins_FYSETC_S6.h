@@ -75,7 +75,7 @@
 // share with X_MAX_PIN
 //
 #ifndef FIL_RUNOUT_PIN
-  #define FIL_RUNOUT_PIN                    PA1
+  #define FIL_RUNOUT_PIN                    PB14
 #endif
 
 //
