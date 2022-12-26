@@ -57,7 +57,7 @@
 // Servos
 //
 #ifndef SERVO0_PIN
-  #define SERVO0_PIN                        PA3
+  #define SERVO0_PIN                        PA1
 #endif
 
 //
@@ -65,8 +65,8 @@
 //
 #define X_MIN_PIN                           PB14
 #define X_MAX_PIN                           PA1
-#define Y_MIN_PIN                           PB13
-#define Y_MAX_PIN                           PA2
+#define Y_MIN_PIN                           PA2
+#define Y_MAX_PIN                           PB13
 #define Z_MIN_PIN                           PA0
 #define Z_MAX_PIN                           PA3
 
@@ -183,7 +183,7 @@
 #endif
 
 #ifndef FAN_PIN
-  #define FAN_PIN                           PB0
+  #define FAN_PIN                           PA13
 #endif
 #ifndef FAN1_PIN
   #define FAN1_PIN                          PB1
