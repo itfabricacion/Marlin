@@ -96,7 +96,7 @@
 
 // Choose the name from boards.h that matches your setup
 #ifndef MOTHERBOARD
-  #define MOTHERBOARD BOARD_BTT_SKR_PRO_V1_2
+  #define MOTHERBOARD BOARD_BTT_SKR_V3_0_EZ
 #endif
 
 /**
@@ -1089,7 +1089,7 @@
  *      - normally-closed switches to GND and D32.
  *      - normally-open switches to 5V and D32.
  */
-#define Z_MIN_PROBE_PIN PE10 // Pin 32 is the RAMPS default
+#define Z_MIN_PROBE_PIN PA0 // Pin 32 is the RAMPS default
 
 /**
  * Probe Type
@@ -2954,7 +2954,7 @@
 #if ENABLED(NEOPIXEL_LED)
   #define NEOPIXEL_TYPE          NEO_GRB // NEO_GRBW, NEO_RGBW, NEO_GRB, NEO_RBG, etc.
                                           // See https://github.com/adafruit/Adafruit_NeoPixel/blob/master/Adafruit_NeoPixel.h
-  #define NEOPIXEL_PIN                PA1 // LED driving pin
+  #define NEOPIXEL_PIN                PE6 // LED driving pin
   //#define NEOPIXEL2_TYPE  NEOPIXEL_TYPE
   //#define NEOPIXEL2_PIN               5
   #define NEOPIXEL_PIXELS              14 // Number of LEDs in the strip. (Longest strip when NEOPIXEL2_SEPARATE is disabled.)
