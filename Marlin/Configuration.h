@@ -143,7 +143,7 @@
 //#define BLUETOOTH
 
 // Name displayed in the LCD "Ready" message and Info menu
-//#define CUSTOM_MACHINE_NAME "3D Printer"
+#define CUSTOM_MACHINE_NAME "Hercules02"
 
 // Printer's unique ID, used by some programs to differentiate between machines.
 // Choose your own or use a service like https://www.uuidgenerator.net/version4
@@ -632,9 +632,9 @@
     #define DEFAULT_Ki_LIST {   0.039,   0.039 }
     #define DEFAULT_Kd_LIST { 157.80, 157.80 }
   #else
-    #define DEFAULT_Kp  23.10
+    #define DEFAULT_Kp  23.1
     #define DEFAULT_Ki  0.039
-    #define DEFAULT_Kd 157.80
+    #define DEFAULT_Kd  157.8
   #endif
 #endif
 
@@ -813,7 +813,7 @@
  * details can be tuned in Configuration_adv.h
  */
 
-//#define THERMAL_PROTECTION_HOTENDS // Enable thermal protection for all extruders
+#define THERMAL_PROTECTION_HOTENDS // Enable thermal protection for all extruders
 //#define THERMAL_PROTECTION_BED     // Enable thermal protection for the heated bed
 #define THERMAL_PROTECTION_CHAMBER // Enable thermal protection for the heated chamber
 #define THERMAL_PROTECTION_COOLER  // Enable thermal protection for the laser cooling
@@ -966,7 +966,7 @@
  * Override with M92
  *                                      X, Y, Z [, I [, J [, K]]], E0 [, E1[, E2...]]
  */
-#define DEFAULT_AXIS_STEPS_PER_UNIT   { 53.33, 53.33, 640, 224.6 }
+#define DEFAULT_AXIS_STEPS_PER_UNIT   { 26.66, 26.66, 640, 224.6 }
 
 /**
  * Default Max Feed Rate (mm/s)
@@ -1229,7 +1229,7 @@
  *     |    [-]    |
  *     O-- FRONT --+
  */
-#define NOZZLE_TO_PROBE_OFFSET { 0, -65, -16 }
+#define NOZZLE_TO_PROBE_OFFSET { 0, -65, 0 }
 
 // Most probes should stay away from the edges of the bed, but
 // with NOZZLE_AS_PROBE this can be negative for a wider probing area.
@@ -2893,7 +2893,7 @@
 // However, control resolution will be halved for each increment;
 // at zero value, there are 128 effective control positions.
 // :[0,1,2,3,4,5,6,7]
-#define SOFT_PWM_SCALE 0
+//#define SOFT_PWM_SCALE 0
 
 // If SOFT_PWM_SCALE is set to a value higher than 0, dithering can
 // be used to mitigate the associated resolution loss. If enabled,
