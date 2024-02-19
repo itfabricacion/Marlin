@@ -56,7 +56,8 @@
 #if TEMP_SENSOR_0 == 1000
   #define HOTEND0_PULLUP_RESISTOR_OHMS 4700    // Pullup resistor
   #define HOTEND0_RESISTANCE_25C_OHMS  100000  // Resistance at 25C
-  #define HOTEND0_BETA                 3950    // Beta value
+  #define HOTEND0_BETA                 4092    // Beta value
+  #define HOTEND0_SH_C_COEFF           0       // Steinhart-Hart C coefficient
 #endif
 
 #if TEMP_SENSOR_1 == 1000
@@ -427,7 +428,7 @@
 
 // Show Temperature ADC value
 // Enable for M105 to include ADC values read from temperature sensors.
-//#define SHOW_TEMP_ADC_VALUES
+#define SHOW_TEMP_ADC_VALUES
 
 /**
  * High Temperature Thermistor Support
