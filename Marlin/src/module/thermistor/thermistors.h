@@ -206,7 +206,39 @@ typedef struct { raw_adc_t value; celsius_t celsius; } temp_entry_t;
   #include "thermistor_999.h"
 #endif
 #if ANY_THERMISTOR_IS(1000) // Custom
-  constexpr temp_entry_t temptable_1000[] PROGMEM = { { 0, 0 } };
+  constexpr temp_entry_t temptable_1000[] PROGMEM = {
+    { OV(  20), 300 }, // top rating 300C
+    { OV(  22), 290 },
+    { OV(  24), 280 },
+    { OV(  26), 270 },
+    { OV(  28), 260 },
+    { OV(  33), 250 },
+    { OV(  39), 240 },
+    { OV(  47), 230 },
+    { OV(  56), 220 },
+    { OV(  68), 210 },
+    { OV(  82), 200 },
+    { OV(  96), 190 },
+    { OV( 118), 180 },
+    { OV( 144), 170 },
+    { OV( 177), 160 },
+    { OV( 217), 150 },
+    { OV( 263), 140 },
+    { OV( 317), 130 },
+    { OV( 379), 120 },
+    { OV( 451), 110 },
+    { OV( 531), 100 },
+    { OV( 614),  90 },
+    { OV( 697),  80 },
+    { OV( 772),  70 },
+    { OV( 842),  60 },
+    { OV( 896),  50 },
+    { OV( 937),  40 },
+    { OV( 968),  30 },
+    { OV( 990),  20 },
+    { OV(1000),  10 },
+    { OV(1010),   0 }
+   };
 #endif
 
 #define _TT_NAME(_N) temptable_ ## _N
