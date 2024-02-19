@@ -94,10 +94,10 @@
 #define Y_ENABLE_PIN                        PD9
 #define Y_CS_PIN                            PE15
 
-#define Z_STEP_PIN                          PE2//PD14
-#define Z_DIR_PIN                           PE4//PD13
-#define Z_ENABLE_PIN                        PE3//PD15
-#define Z_CS_PIN                            PC15//PD10
+#define Z_STEP_PIN                          PD14
+#define Z_DIR_PIN                           PD13
+#define Z_ENABLE_PIN                        PD15
+#define Z_CS_PIN                            PD10
 
 #define E0_STEP_PIN                         PD5
 #define E0_DIR_PIN                          PD6
@@ -109,10 +109,10 @@
 #define E1_ENABLE_PIN                       PE5
 #define E1_CS_PIN                           PC14
 
-#define E2_STEP_PIN                         PD14//PE2
-#define E2_DIR_PIN                          PD13//PE4
-#define E2_ENABLE_PIN                       PD15//PE3
-#define E2_CS_PIN                           PD10//PC15
+#define E2_STEP_PIN                         PE2
+#define E2_DIR_PIN                          PE4
+#define E2_ENABLE_PIN                       PE3
+#define E2_CS_PIN                           PC15
 
 #if HAS_TMC_UART
   //
