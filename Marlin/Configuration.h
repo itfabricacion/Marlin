@@ -479,6 +479,7 @@
  *    30 : 100kΩ  Kis3d Silicone heating mat 200W/300W with 6mm precision cast plate (EN AW 5083) NTC100K - beta 3950
  *    60 : 100kΩ  Maker's Tool Works Kapton Bed Thermistor - beta 3950
  *    61 : 100kΩ  Formbot/Vivedino 350°C Thermistor - beta 3950
+ *    62 : 100kΩ ITMAX 350°C Thermistor - beta 3908
  *    66 : 4.7MΩ  Dyze Design High Temperature Thermistor
  *    67 : 500kΩ  SliceEngineering 450°C Thermistor
  *    68 : PT100 amplifier board from Dyze Design
@@ -518,7 +519,7 @@
  *   999 : Dummy Table that ALWAYS reads 100°C or the temperature defined below.
  *
  */
-#define TEMP_SENSOR_0 1000
+#define TEMP_SENSOR_0 62
 #define TEMP_SENSOR_1 0
 #define TEMP_SENSOR_2 0
 #define TEMP_SENSOR_3 0
