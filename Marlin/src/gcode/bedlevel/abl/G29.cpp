@@ -403,8 +403,8 @@ G29_TYPE GcodeSuite::G29() {
         abl.probe_position_rb.set(_MIN(abl.probe_position_lf.x + size, x_max), _MIN(abl.probe_position_lf.y + size, y_max));
       }
       else {
-        abl.probe_position_lf.set(parser.linearval('L', x_min), parser.linearval('F', y_min));
-        abl.probe_position_rb.set(parser.linearval('R', x_max), parser.linearval('B', y_max));
+        abl.probe_position_lf.set(parser.linearval('L', x_max), parser.linearval('F', y_max));
+        abl.probe_position_rb.set(parser.linearval('R', x_min), parser.linearval('B', y_min));
       }
 
       if (!probe.good_bounds(abl.probe_position_lf, abl.probe_position_rb)) {
