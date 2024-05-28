@@ -42,14 +42,14 @@
   #define X_SERIAL_RX_PIN                   PE8
   #define Y_SERIAL_TX_PIN                   PC4
   #define Y_SERIAL_RX_PIN                   PC4
-  #define Z_SERIAL_TX_PIN                   PD12
-  #define Z_SERIAL_RX_PIN                   PD12
+  #define Z_SERIAL_TX_PIN                   PE0//PD12
+  #define Z_SERIAL_RX_PIN                   PE0//PD12
   #define E0_SERIAL_TX_PIN                  PA15
   #define E0_SERIAL_RX_PIN                  PA15
   #define E1_SERIAL_TX_PIN                  PC5
   #define E1_SERIAL_RX_PIN                  PC5
-  #define E2_SERIAL_TX_PIN                  PE0
-  #define E2_SERIAL_RX_PIN                  PE0
+  #define E2_SERIAL_TX_PIN                  PD12//PE0
+  #define E2_SERIAL_RX_PIN                  PD12//PE0
 #endif
 
 //
